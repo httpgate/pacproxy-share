@@ -7,10 +7,6 @@ const webAgent = new https.Agent({
 	maxCachedSessions : 1000
 });
 
-process.stdin
-  .pipe(replace('a', 'b'))
-  .pipe(process.stdout);
-
 const shareModule = {
 	"domain" : 'localhost',
 	"port" : 8080,
@@ -73,6 +69,8 @@ function handleRequest(req, res) {
 
 	const headers = {...req.headers};
 	headers.host = parsed.host;
+	if(url.includes('cloudokyo') || url.endsWith('.mp3') || url.endsWith('.mp4') || url.endsWith('.m4a') ) parsed.headers= headers;
+	else if(req.method=='POST') parsed.headers= headers;
 
 	parsed.agent = webAgent;
 	try {
@@ -122,8 +120,14 @@ function requestRemote(parsed, req, res) {
 			else if(encoding.includes('br')) pipend = pipend.pipe(zlib.createBrotliDecompress())
 			else if(encoding.includes('deflate')) pipend = pipend.pipe(zlib.createInflateRaw())
 
-			if(shareModule.https)	pipend = pipend.pipe(replace('src="//', 'src="https://')).pipe(replace("src='//", "src='https://"));
-			else	pipend = pipend.pipe(replace('src="//', 'src="http://')).pipe(replace("src='//", "src='http://"));
+			if(shareModule.https){
+				pipend = pipend.pipe(replace('src="//', 'src="https://')).pipe(replace("src='//", "src='https://"));
+				pipend = pipend.pipe(replace('href="//', 'href="https://')).pipe(replace("href='//", "href='https://"));
+			}
+			else{
+				pipend = pipend.pipe(replace('src="//', 'src="http://')).pipe(replace("src='//", "src='http://"));
+				pipend = pipend.pipe(replace('href="//', 'href="http://')).pipe(replace("href='//", "href='http://"));
+			}
 
 			pipend = pipend.pipe(replace('src="/', 'src="' + shareModule.root + rhost + '/')).pipe(replace("src='/", "src='"+shareModule.root + rhost + '/'));
 			pipend = pipend.pipe(replace('href="/', 'href="' + shareModule.root + rhost + '/')).pipe(replace("href='/", "href='" + shareModule.root + rhost + '/'));
