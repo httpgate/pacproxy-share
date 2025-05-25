@@ -1,0 +1,25 @@
+{
+  "name": "pacproxy-share",
+  "version": "1.0.0",
+  "description": "a website module used to share other websites, it can be deployed inside pacproxy-server, Nginx, LiteSpeed.",
+  "main": "pshare.js",
+  "bin": "runshare.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/httpgate/pacproxy-share.git"
+  },
+  "keywords": [
+    "pacproxy",
+    "proxy",
+    "share"
+  ],
+  "author": "xinjingjie.us@gmail.com",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/httpgate/pacproxy-share/issues"
+  },
+  "homepage": "https://github.com/httpgate/pacproxy-share#readme"
+}
