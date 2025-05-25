@@ -23,17 +23,17 @@ function startShare(options){
 	if("https" in options) shareModule.https=options.https;
 	if("logging" in options) shareModule.logging=options.logging;
 
+	if(!shareModule.root.startsWith('/')) shareModule.root='/'+shareModule.root;
+	if(!shareModule.root.endsWith('/')) shareModule.root=shareModule.root + '/';	
+
 	if("server" in options) shareModule.server=options.server;
 	else {
 		shareModule.server = http.createServer();
-		shareModule.https = false;
+		shareModule.server.listen(shareModule.port, '0.0.0.0',() => {
+           console.info("\r\n Http Sharing Server Listening on ", shareModule.server.address());
+        });
+		shareModule.server.on('error', gErrorHandler);
 	}
-
-	if(!shareModule.root.startsWith('/')) shareModule.root='/'+shareModule.root;
-	if(!shareModule.root.endsWith('/')) shareModule.root=shareModule.root + '/';	
-	
-	shareModule.server.listen(shareModule.port, '0.0.0.0');
-
 	shareModule.server.on('request', handleRequest);
 }
 
@@ -50,7 +50,6 @@ function handleRequest(req, res) {
 		if(req.headers.referer && req.headers.referer.includes(shareModule.root)) {
 			const domainIndex = req.headers.referer.indexOf(shareModule.root) + shareModule.root.length;
 			const domainRefer = req.headers.referer.slice(domainIndex, req.headers.referer.indexOf('/', domainIndex));
-			
 			if(checkDomain(domainRefer))  return response(res, 301, {'location': shareModule.root + domainRefer + req.url});
 			else response(res,404);
 		}
@@ -68,9 +67,11 @@ function handleRequest(req, res) {
 	if(!checkDomain(parsed.host))	return  response(res, 403);
 
 	const headers = {...req.headers};
+	const filterHeaders = {'User-Agent': headers['user-agent'], 'Accept-Encoding': headers['accept-encoding'], 'Accept-Language': headers['accept-language'],'Host': parsed.host, 'Accept': headers['accept']};
 	headers.host = parsed.host;
 	if(url.includes('cloudokyo') || url.endsWith('.mp3') || url.endsWith('.mp4') || url.endsWith('.m4a') ) parsed.headers= headers;
 	else if(req.method=='POST') parsed.headers= headers;
+	else parsed.headers = filterHeaders
 
 	parsed.agent = webAgent;
 	try {
