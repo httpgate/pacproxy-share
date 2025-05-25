@@ -26,33 +26,37 @@ const replace = (searchStr, replaceWith) => {
 	var ts = new Transform();
 
 	ts._transform = (chunk, encoding, callback) => {
-        if(unsureBuffer.length) chunk = Buffer.concat([unsureBuffer,chunk]);
-        unsureBuffer='';
         let current = 0;
         let next = 0;
+
+        if(unsureBuffer.length){
+            chunk = Buffer.concat([unsureBuffer,chunk]);
+            current = unsureBuffer.length;
+            unsureBuffer ='';
+        }
+
+        next = chunk.indexOf(searchBuffer);
         while(current < chunk.length){
-            next = chunk.indexOf(searchBuffer,current);
             if(next===-1){
+                ts.push(chunk.slice(current,chunk.length));
                 if((chunk.length-current) < searchBuffer.length)    next = current;
                 else next = chunk.length - searchBuffer.length + 1;
                 unsureBuffer = chunk.slice(next);
-                ts.push(chunk.slice(current,next));
                 break;
             } else {
                 ts.push(chunk.slice(current,next));
                 ts.push(replaceBuffer);
                 current = next + searchBuffer.length;
+                next = chunk.indexOf(searchBuffer,current);
                 continue;
             }
         }
-		// This is needed
-		callback()
+        // This is needed
+        callback()
 	}
 
 	ts._flush = (callback) => {
-		// Release the unsureBuffer
-        ts.push(unsureBuffer);
-		callback()
+        callback()
 	}
 
 	return ts;

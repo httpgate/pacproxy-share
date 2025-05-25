@@ -20,7 +20,6 @@ const shareModule = {
 	"logging" : true,
 }
 
-
 function startShare(options){
 	if("domain" in options) shareModule.domain=options.domain;
 	if("port" in options) shareModule.port=options.port;
@@ -51,7 +50,16 @@ function handleRequest(req, res) {
 	log('%s %s %s ', visitorIP, req.headers.host, req.url);
 
 
-	if(!req.url.startsWith(shareModule.root)) return response(res,404);
+	if(!req.url.startsWith(shareModule.root)){
+		if(req.headers.referer && req.headers.referer.includes(shareModule.root)) {
+			const domainIndex = req.headers.referer.indexOf(shareModule.root) + shareModule.root.length;
+			const domainRefer = req.headers.referer.slice(domainIndex, req.headers.referer.indexOf('/', domainIndex));
+			
+			if(checkDomain(domainRefer))  return response(res, 301, {'location': shareModule.root + domainRefer + req.url});
+			else response(res,404);
+		}
+		else	return response(res,404);
+	}
 	
 	const url = req.url.slice(shareModule.root.length);
 
@@ -66,7 +74,6 @@ function handleRequest(req, res) {
 	const headers = {...req.headers};
 	headers.host = parsed.host;
 
-	parsed.headers = headers;
 	parsed.agent = webAgent;
 	try {
 		requestRemote(parsed, req, res);
@@ -205,4 +212,5 @@ function isLocalIP(address) {
 	if(address.startsWith('192.168.') || address.startsWith('10.') || address.startsWith('127.') || address.startsWith('169.254.') || address.startsWith('172.16')) return true;
 	return false;
 }
+
 module.exports = startShare;
