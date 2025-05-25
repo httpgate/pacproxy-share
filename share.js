@@ -102,7 +102,7 @@ function requestRemote(parsed, req, res) {
 		if ([301, 302, 307].includes(statusCode) && proxyRes.headers['location']) {
 			let location = proxyRes.headers['location'].trim();
 
-			if(shareModule.https)	location = location.replace('https://', 'https://"' + host + shareModule.root).replace('http://', 'https://"' + host + shareModule.root)
+			if(shareModule.https)	location = location.replace('https://', 'https://' + host + shareModule.root).replace('http://', 'https://' + host + shareModule.root)
 			location = location.replace('http://', 'http://' + host + shareModule.root).replace('https://', 'http://' + host + shareModule.root)
 
 			headers['location'] = location;
@@ -137,7 +137,7 @@ function requestRemote(parsed, req, res) {
 			pipend = pipend.pipe(replace('url: "/', 'url: "' + shareModule.root + rhost + '/')).pipe(replace("url: '/", "url: '"+shareModule.root + rhost + '/'));
 			pipend = pipend.pipe(replace('href=/', 'href=' + shareModule.root + rhost + '/')).pipe(replace('src=/', 'src=' + shareModule.root + rhost + '/')).pipe(replace('url(/', 'url(' + shareModule.root + rhost + '/'))
 
-			if(shareModule.https)	pipend = pipend.pipe(replace('https://', 'https://"' + host + shareModule.root));
+			if(shareModule.https)	pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
 			else	pipend = pipend.pipe(replace('http://', 'http://' + host + shareModule.root)).pipe(replace('https://', 'http://' + host + shareModule.root));
 
 			if(encoding.includes('gzip'))	pipend = pipend.pipe(zlib.createGzip());
