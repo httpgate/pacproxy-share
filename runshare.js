@@ -3,5 +3,5 @@
 const startShare = require('./share.js');
 
 //TODO handle arguments
-//const options = {"https": false}
+const options = {"https": true}
 startShare(options);
