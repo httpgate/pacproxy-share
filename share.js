@@ -102,8 +102,12 @@ function requestRemote(parsed, req, res) {
 		if ([301, 302, 307].includes(statusCode) && proxyRes.headers['location']) {
 			let location = proxyRes.headers['location'].trim();
 
-			if(shareModule.https)	location = location.replace('https://', 'https://' + host + shareModule.root).replace('http://', 'https://' + host + shareModule.root)
-			location = location.replace('http://', 'http://' + host + shareModule.root).replace('https://', 'http://' + host + shareModule.root)
+			if(location.includes(host + shareModule.root)) {
+				if(shareModule.https) location = location.replace('http', 'https');
+				else location = location.replace('https', 'http');
+			}
+			else if(shareModule.https)	location = location.replace('https://', 'https://' + host + shareModule.root).replace('http://', 'https://' + host + shareModule.root)
+			else location = location.replace('http://', 'http://' + host + shareModule.root).replace('https://', 'http://' + host + shareModule.root)
 
 			headers['location'] = location;
 			res.writeHead(statusCode, headers);
