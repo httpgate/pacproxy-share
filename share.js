@@ -1,4 +1,4 @@
-const http = require('https');
+const http = require('http');
 const https = require('https');
 const zlib = require('zlib');
 const replace = require('./replace.js');
@@ -102,7 +102,7 @@ function requestRemote(parsed, req, res) {
 		if ([301, 302, 307].includes(statusCode) && proxyRes.headers['location']) {
 			let location = proxyRes.headers['location'].trim();
 
-			if(shareModule.https)	location = location.replace('https://', 'https://"' + host + shareModule.root)
+			if(shareModule.https)	location = location.replace('https://', 'https://"' + host + shareModule.root).replace('http://', 'https://"' + host + shareModule.root)
 			location = location.replace('http://', 'http://' + host + shareModule.root).replace('https://', 'http://' + host + shareModule.root)
 
 			headers['location'] = location;
