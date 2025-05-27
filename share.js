@@ -75,8 +75,8 @@ function handleRequest(req, res) {
 	parsed.method = req.method;
 	if(req.method=='POST') parsed.headers= headers;
 	else if(url.endsWith('.mp3') || url.endsWith('.mp4') || url.endsWith('.m4a'))	 parsed.headers= headers;
-	else if(url.endsWith('/') || url.endsWith('.html') || url.endsWith('.htm') || url.endsWith('.php') || url.endsWith('.css') )  delete headers['accept-encoding'];
-	else if(url.includes('.php?') || url.includes('.css?') || url.includes('.html?') || url.includes('.htm#') ) delete headers['accept-encoding'];
+	else if(url.endsWith('/') || url.endsWith('.html') || url.endsWith('.htm') || url.endsWith('.php') || url.endsWith('.css') )  delete parsed.headers['accept-encoding'];
+	else if(url.includes('.php?') || url.includes('.css?') || url.includes('.html?') || url.includes('.htm#') ) delete parsed.headers['accept-encoding'];
 	else if(url.includes('cloudokyo')) parsed.headers= headers;
 
 	parsed.agent = webAgent;
@@ -163,7 +163,7 @@ function requestRemote(parsed, req, res) {
 
 		if (resHtml || resJs) {
 			if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.startsWith('/embed/') || parsed.pathname.includes('/live/')))
-				pipend = pipend.pipe(replace('https://www.ganjingworld', (shareModule.https? 'https://' : 'http://') + host + shareModule.root + "www.ganjingworld"));
+				pipend = pipend.pipe(replace('https://www.ganjingworld.', (shareModule.https? 'https://' : 'http://') + host + shareModule.root + "www.ganjingworld."));
 
 			else if(shareModule.https)	pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
 			else	pipend = pipend.pipe(replace('http://', 'http://' + host + shareModule.root)).pipe(replace('https://', 'http://' + host + shareModule.root));
