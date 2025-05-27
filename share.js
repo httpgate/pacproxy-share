@@ -68,6 +68,7 @@ function handleRequest(req, res) {
 	const headers = {...req.headers};
 	const filterHeaders = {'User-Agent': headers['user-agent'], 'Accept-Encoding': headers['accept-encoding'], 'Host': parsed.host};
 	if(headers['accept-language']) filterHeaders['Accept-Language'] = headers['accept-language'];
+	if(headers['cache-control']) filterHeaders['Cache-Control'] = headers['cache-control'];
 
 	headers.host = parsed.host;
 
@@ -77,7 +78,7 @@ function handleRequest(req, res) {
 	else if(url.endsWith('.mp3') || url.endsWith('.mp4') || url.endsWith('.m4a'))	 parsed.headers= headers;
 	else if(url.endsWith('/') || url.endsWith('.html') || url.endsWith('.htm') || url.endsWith('.php') || url.endsWith('.css') )  delete parsed.headers['accept-encoding'];
 	else if(url.includes('.php?') || url.includes('.css?') || url.includes('.html?') || url.includes('.htm#') ) delete parsed.headers['accept-encoding'];
-	else if(url.includes('cloudokyo')) parsed.headers= headers;
+	else if(url.includes('.cloudokyo.cloud')) parsed.headers= headers;
 
 	parsed.agent = webAgent;
 	try {
