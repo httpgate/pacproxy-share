@@ -69,9 +69,14 @@ function handleRequest(req, res) {
 	const headers = {...req.headers};
 	const filterHeaders = {'User-Agent': headers['user-agent'], 'Accept-Encoding': headers['accept-encoding'], 'Accept-Language': headers['accept-language'],'Host': parsed.host, 'Accept': headers['accept']};
 	headers.host = parsed.host;
-	if(url.includes('cloudokyo') || url.endsWith('.mp3') || url.endsWith('.mp4') || url.endsWith('.m4a') ) parsed.headers= headers;
-	else if(req.method=='POST') parsed.headers= headers;
-	else parsed.headers = filterHeaders
+
+	parsed.headers = filterHeaders
+
+	if(req.method=='POST') parsed.headers= headers;
+	else if(url.endsWith('.mp3') || url.endsWith('.mp4') || url.endsWith('.m4a'))	 parsed.headers= headers;
+	else if(url.endsWith('/') || url.endsWith('.html') || url.endsWith('.htm') || url.endsWith('.php') || url.endsWith('.css') )  delete headers['accept-encoding'];
+	else if(url.includes('.php?') || url.includes('.css?') || url.includes('.html?') || url.includes('.htm#') ) delete headers['accept-encoding'];
+	else if(url.includes('cloudokyo')) parsed.headers= headers;
 
 	parsed.agent = webAgent;
 	try {
@@ -112,18 +117,24 @@ function requestRemote(parsed, req, res) {
 			headers['location'] = location;
 			res.writeHead(statusCode, headers);
 			return proxyRes.pipe(res);
-
 		}
 
 		const resHtml = headers['content-type'] && ( headers['content-type'].includes('text/html') ||  headers['content-type'].includes('text/css'));
-		const encoding = (headers['content-encoding'] || '').toLowerCase() ;
+		const decoding = (headers['content-encoding'] || '').toLowerCase() ;
+		let encoding = decoding;
+		if(!decoding && resHtml && req.headers['accept-encoding'] && req.headers['accept-encoding'].toLowerCase().includes('gzip')) {
+			encoding = 'gzip';
+			headers['content-encoding'] = 'gzip';
+		}
+
 		delete headers['content-length'];
 		res.writeHead(statusCode, headers);
 		let pipend = proxyRes;
 		if (resHtml) {
-			if(encoding.includes('gzip'))	pipend = pipend.pipe( zlib.createUnzip());
-			else if(encoding.includes('br')) pipend = pipend.pipe(zlib.createBrotliDecompress())
-			else if(encoding.includes('deflate')) pipend = pipend.pipe(zlib.createInflateRaw())
+			if(decoding.includes('gzip'))	pipend = pipend.pipe( zlib.createGunzip());
+			else if(decoding.includes('zstd')) pipend = pipend.pipe(zlib.createZstdDecompress())
+			else if(decoding.includes('br')) pipend = pipend.pipe(zlib.createBrotliDecompress())
+			else if(decoding.includes('deflate')) pipend = pipend.pipe(zlib.createInflateRaw())
 
 			if(shareModule.https){
 				pipend = pipend.pipe(replace('src="//', 'src="https://')).pipe(replace("src='//", "src='https://"));
@@ -145,9 +156,9 @@ function requestRemote(parsed, req, res) {
 			else	pipend = pipend.pipe(replace('http://', 'http://' + host + shareModule.root)).pipe(replace('https://', 'http://' + host + shareModule.root));
 
 			if(encoding.includes('gzip'))	pipend = pipend.pipe(zlib.createGzip());
+			else if(encoding.includes('zstd')) pipend = pipend.pipe(zlib.createZstdCompress())
 			else if(encoding.includes('br')) pipend = pipend.pipe(zlib.createBrotliCompress())
 			else if(encoding.includes('deflate')) pipend = pipend.pipe(zlib.createDeflateRaw())
-
 			pipend.pipe(res);
 
 		} else {
