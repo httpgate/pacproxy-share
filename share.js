@@ -66,7 +66,9 @@ function handleRequest(req, res) {
 	if(!checkDomain(parsed.host))	return  response(res, 403);
 
 	const headers = {...req.headers};
-	const filterHeaders = {'User-Agent': headers['user-agent'], 'Accept-Encoding': headers['accept-encoding'], 'Accept-Language': headers['accept-language'],'Host': parsed.host};
+	const filterHeaders = {'User-Agent': headers['user-agent'], 'Accept-Encoding': headers['accept-encoding'], 'Host': parsed.host};
+	if(headers['accept-language']) filterHeaders['Accept-Language'] = headers['accept-language'];
+
 	headers.host = parsed.host;
 
 	parsed.headers = filterHeaders
@@ -119,7 +121,7 @@ function requestRemote(parsed, req, res) {
 		}
 
 		const resHtml = headers['content-type'] && ( headers['content-type'].includes('text/html') ||  headers['content-type'].includes('text/css'));
-		let resJs = rhost.endsWith('ganjingworld.com') && parsed.pathname.endsWith('.js') && parsed.pathname.includes('pages/_app-');
+		let resJs = rhost.endsWith('ganjingworld.com') && parsed.pathname.endsWith('.js') && parsed.pathname.includes('/pages/_app-');
 		if(!resJs)  resJs = rhost.endsWith('falundafa.org')  && parsed.pathname.includes('functions.js');
 
 		if(resJs|| resHtml)	delete headers['content-length'];
@@ -160,7 +162,9 @@ function requestRemote(parsed, req, res) {
 		}
 
 		if (resHtml || resJs) {
-			if(rhost.endsWith('.ganjingworld.com') && parsed.pathname.startsWith('/embed/'))	pipend = pipend.pipe(replace('https://www.ganjingworld', 'http://' + host + shareModule.root + "www.ganjingworld"));
+			if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.startsWith('/embed/') || parsed.pathname.includes('/live/')))
+				pipend = pipend.pipe(replace('https://www.ganjingworld', (shareModule.https? 'https://' : 'http://') + host + shareModule.root + "www.ganjingworld"));
+
 			else if(shareModule.https)	pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
 			else	pipend = pipend.pipe(replace('http://', 'http://' + host + shareModule.root)).pipe(replace('https://', 'http://' + host + shareModule.root));
 
