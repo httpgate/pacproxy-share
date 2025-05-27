@@ -2,6 +2,8 @@ const http = require('http');
 const https = require('https');
 const zlib = require('zlib');
 const replace = require('./replace.js');
+const { on } = require('events');
+const rejectAccess = (req, res) => response(res,403);
 const webAgent = new https.Agent({
 	keepAlive: true,
 	maxCachedSessions : 1000
@@ -9,32 +11,44 @@ const webAgent = new https.Agent({
 
 const shareModule = {
 	"domain" : 'localhost',
-	"port" : 8080,
 	"root" : '/sharepath/',
+	"port" : 8080,
+	"ip" : '0.0.0.0',
+	"logging" : false,
 	"https" : true,
 	"server" : false,
-	"logging" : true,
+	"onNotFound" : rejectAccess
 }
 
 function startShare(options){
-	if("domain" in options) shareModule.domain=options.domain;
-	if("port" in options) shareModule.port=options.port;
-	if("root" in options) shareModule.root=options.root;
-	if("https" in options) shareModule.https=options.https;
-	if("logging" in options) shareModule.logging=options.logging;
+	if(!options) return startShare({'https': false});
 
+	if("domain" in options) {
+		shareModule.domain=options.domain;
+		if(!checkDomain(shareModule.domain))	return console.error('Invalid domain name: %s', shareModule.domain);
+	}
+	if("root" in options) shareModule.root=options.root;
 	if(!shareModule.root.startsWith('/')) shareModule.root='/'+shareModule.root;
 	if(!shareModule.root.endsWith('/')) shareModule.root=shareModule.root + '/';	
+
+	if("port" in options) shareModule.port=options.port;
+	if("ip" in options) shareModule.ip=options.ip;
+	if("logging" in options) shareModule.logging=options.logging;
+	if("https" in options) shareModule.https=options.https;
 
 	if("server" in options) shareModule.server=options.server;
 	else {
 		shareModule.server = http.createServer();
-		shareModule.server.listen(shareModule.port, '0.0.0.0',() => {
+		shareModule.server.listen(shareModule.port, shareModule.ip, () => {
            console.info("\r\n Http Sharing Server Listening on ", shareModule.server.address());
         });
 		shareModule.server.on('error', gErrorHandler);
 	}
+
+	if("onNotFound" in options) shareModule.onNotFound=options.onNotFound;
+
 	shareModule.server.on('request', handleRequest);
+	console.info('Share Internet with prefix:	%s://%s%s%s', shareModule.https ? 'https' : 'http', shareModule.domain, (shareModule.https ? '' : ':'+ shareModule.port), shareModule.root);
 }
 
 
@@ -45,14 +59,16 @@ function handleRequest(req, res) {
 	const visitorIP = req.socket.remoteAddress;
 	log('%s %s %s ', visitorIP, req.headers.host, req.url);
 
+	if(req.headers.host && req.headers.host.split(':')[0].toLowerCase() != shareModule.domain) return onNotFound(req, res);
+
 	if(!req.url.startsWith(shareModule.root)){
 		if(req.headers.referer && req.headers.referer.includes(shareModule.root)) {
 			const domainIndex = req.headers.referer.indexOf(shareModule.root) + shareModule.root.length;
 			const domainRefer = req.headers.referer.slice(domainIndex, req.headers.referer.indexOf('/', domainIndex));
 			if(checkDomain(domainRefer))  return response(res, 301, {'location': shareModule.root + domainRefer + req.url});
-			else response(res,404);
+			else return onNotFound(req, res);
 		}
-		else	return response(res,404);
+		else	return onNotFound(req, res);
 	}
 	
 	const url = req.url.slice(shareModule.root.length);
@@ -80,6 +96,10 @@ function handleRequest(req, res) {
 	else if(url.includes('.php?') || url.includes('.css?') || url.includes('.html?') || url.includes('.htm#') ) delete parsed.headers['accept-encoding'];
 	else if(url.includes('.cloudokyo.cloud')) parsed.headers= headers;
 
+	if(shareModule.ip !== '0.0.0.0'){
+		parsed.localAddress = shareModule.ip;
+	}
+
 	parsed.agent = webAgent;
 	try {
 		requestRemote(parsed, req, res);
@@ -87,7 +107,6 @@ function handleRequest(req, res) {
 		log('%s Error %s ', visitorIP, e.message);
 	}
 }
-
 
 function requestRemote(parsed, req, res) {
 	const visitorIP = req.socket.remoteAddress;
@@ -248,5 +267,7 @@ function isLocalIP(address) {
 	if(address.startsWith('192.168.') || address.startsWith('10.') || address.startsWith('127.') || address.startsWith('169.254.') || address.startsWith('172.16')) return true;
 	return false;
 }
+
+process.on('uncaughtException', gErrorHandler);
 
 module.exports = startShare;
