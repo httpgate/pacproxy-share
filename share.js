@@ -45,7 +45,6 @@ function handleRequest(req, res) {
 	const visitorIP = req.socket.remoteAddress;
 	log('%s %s %s ', visitorIP, req.headers.host, req.url);
 
-
 	if(!req.url.startsWith(shareModule.root)){
 		if(req.headers.referer && req.headers.referer.includes(shareModule.root)) {
 			const domainIndex = req.headers.referer.indexOf(shareModule.root) + shareModule.root.length;
@@ -67,11 +66,11 @@ function handleRequest(req, res) {
 	if(!checkDomain(parsed.host))	return  response(res, 403);
 
 	const headers = {...req.headers};
-	const filterHeaders = {'User-Agent': headers['user-agent'], 'Accept-Encoding': headers['accept-encoding'], 'Accept-Language': headers['accept-language'],'Host': parsed.host, 'Accept': headers['accept']};
+	const filterHeaders = {'User-Agent': headers['user-agent'], 'Accept-Encoding': headers['accept-encoding'], 'Accept-Language': headers['accept-language'],'Host': parsed.host};
 	headers.host = parsed.host;
 
 	parsed.headers = filterHeaders
-
+	parsed.method = req.method;
 	if(req.method=='POST') parsed.headers= headers;
 	else if(url.endsWith('.mp3') || url.endsWith('.mp4') || url.endsWith('.m4a'))	 parsed.headers= headers;
 	else if(url.endsWith('/') || url.endsWith('.html') || url.endsWith('.htm') || url.endsWith('.php') || url.endsWith('.css') )  delete headers['accept-encoding'];
@@ -120,6 +119,11 @@ function requestRemote(parsed, req, res) {
 		}
 
 		const resHtml = headers['content-type'] && ( headers['content-type'].includes('text/html') ||  headers['content-type'].includes('text/css'));
+		let resJs = rhost.endsWith('ganjingworld.com') && parsed.pathname.endsWith('.js') && parsed.pathname.includes('pages/_app-');
+		if(!resJs)  resJs = rhost.endsWith('falundafa.org')  && parsed.pathname.includes('functions.js');
+
+		if(resJs|| resHtml)	delete headers['content-length'];
+
 		const decoding = (headers['content-encoding'] || '').toLowerCase() ;
 		let encoding = decoding;
 		if(!decoding && resHtml && req.headers['accept-encoding'] && req.headers['accept-encoding'].toLowerCase().includes('gzip')) {
@@ -127,15 +131,17 @@ function requestRemote(parsed, req, res) {
 			headers['content-encoding'] = 'gzip';
 		}
 
-		delete headers['content-length'];
 		res.writeHead(statusCode, headers);
 		let pipend = proxyRes;
-		if (resHtml) {
-			if(decoding.includes('gzip'))	pipend = pipend.pipe( zlib.createGunzip());
+		if (resHtml || resJs) {
+			if(!decoding)	pipend = proxyRes;
+			else if(decoding.includes('gzip'))	pipend = pipend.pipe( zlib.createGunzip());
 			else if(decoding.includes('zstd')) pipend = pipend.pipe(zlib.createZstdDecompress())
 			else if(decoding.includes('br')) pipend = pipend.pipe(zlib.createBrotliDecompress())
 			else if(decoding.includes('deflate')) pipend = pipend.pipe(zlib.createInflateRaw())
+		}
 
+		if (resHtml) {
 			if(shareModule.https){
 				pipend = pipend.pipe(replace('src="//', 'src="https://')).pipe(replace("src='//", "src='https://"));
 				pipend = pipend.pipe(replace('href="//', 'href="https://')).pipe(replace("href='//", "href='https://"));
@@ -151,9 +157,14 @@ function requestRemote(parsed, req, res) {
 			pipend = pipend.pipe(replace('url("/', 'url("' + shareModule.root + rhost + '/')).pipe(replace("url('/", "url('"+shareModule.root + rhost + '/'));
 			pipend = pipend.pipe(replace('url: "/', 'url: "' + shareModule.root + rhost + '/')).pipe(replace("url: '/", "url: '"+shareModule.root + rhost + '/'));
 			pipend = pipend.pipe(replace('href=/', 'href=' + shareModule.root + rhost + '/')).pipe(replace('src=/', 'src=' + shareModule.root + rhost + '/')).pipe(replace('url(/', 'url(' + shareModule.root + rhost + '/'))
+		}
 
-			if(shareModule.https)	pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
+		if (resHtml || resJs) {
+			if(rhost.endsWith('.ganjingworld.com') && parsed.pathname.startsWith('/embed/'))	pipend = pipend.pipe(replace('https://www.ganjingworld', 'http://' + host + shareModule.root + "www.ganjingworld"));
+			else if(shareModule.https)	pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
 			else	pipend = pipend.pipe(replace('http://', 'http://' + host + shareModule.root)).pipe(replace('https://', 'http://' + host + shareModule.root));
+
+			if(rhost.endsWith('.soundofhope.org') && parsed.pathname.startsWith('/post/'))	pipend = pipend.pipe(replace('//media.soundofhope.org',  '//' + host + shareModule.root + "media.soundofhope.org"));
 
 			if(encoding.includes('gzip'))	pipend = pipend.pipe(zlib.createGzip());
 			else if(encoding.includes('zstd')) pipend = pipend.pipe(zlib.createZstdCompress())
