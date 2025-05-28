@@ -2,7 +2,6 @@ const http = require('http');
 const https = require('https');
 const zlib = require('zlib');
 const replace = require('./replace.js');
-const { on } = require('events');
 const rejectAccess = (req, res) => response(res,403);
 const webAgent = new https.Agent({
 	keepAlive: true,
@@ -12,63 +11,52 @@ const webAgent = new https.Agent({
 const shareModule = {
 	"domain" : 'localhost',
 	"root" : '/sharepath/',
-	"port" : 8080,
 	"ip" : '0.0.0.0',
 	"logging" : false,
 	"https" : true,
-	"server" : false,
 	"onNotFound" : rejectAccess
 }
 
-function startShare(options){
-	if(!options) return startShare({'https': false});
-
+function share(options){
+	if(!options || typeof options != 'object') return share({'https': false});
+		
 	if("domain" in options) {
-		shareModule.domain=options.domain;
+		shareModule.domain=options.domain.toLowerCase().trim();
 		if(!checkDomain(shareModule.domain))	return console.error('Invalid domain name: %s', shareModule.domain);
 	}
 	if("root" in options) shareModule.root=options.root;
 	if(!shareModule.root.startsWith('/')) shareModule.root='/'+shareModule.root;
 	if(!shareModule.root.endsWith('/')) shareModule.root=shareModule.root + '/';	
 
-	if("port" in options) shareModule.port=options.port;
 	if("ip" in options) shareModule.ip=options.ip;
 	if("logging" in options) shareModule.logging=options.logging;
 	if("https" in options) shareModule.https=options.https;
 
-	if("server" in options) shareModule.server=options.server;
-	else {
-		shareModule.server = http.createServer();
-		shareModule.server.listen(shareModule.port, shareModule.ip, () => {
-           console.info("\r\n Http Sharing Server Listening on ", shareModule.server.address());
-        });
-		shareModule.server.on('error', gErrorHandler);
-	}
-
 	if("onNotFound" in options) shareModule.onNotFound=options.onNotFound;
 
-	shareModule.server.on('request', handleRequest);
-	console.info('Share Internet with prefix:	%s://%s%s%s', shareModule.https ? 'https' : 'http', shareModule.domain, (shareModule.https ? '' : ':'+ shareModule.port), shareModule.root);
+	console.info('\nShare Internet with prefix:	%s://%s%s%s', shareModule.https ? 'https' : 'http', shareModule.domain, (shareModule.https ? '' : ':'+ shareModule.port), shareModule.root);
+
+	return shareHandler;
 }
 
 
 /**
  * handle website requests
  */
-function handleRequest(req, res) {
+function shareHandler(req, res) {
 	const visitorIP = req.socket.remoteAddress;
 	log('%s %s %s ', visitorIP, req.headers.host, req.url);
 
-	if(req.headers.host && req.headers.host.split(':')[0].toLowerCase() != shareModule.domain) return onNotFound(req, res);
+	if(req.headers.host && req.headers.host.split(':')[0].toLowerCase() != shareModule.domain) return shareModule.onNotFound(req, res);
 
 	if(!req.url.startsWith(shareModule.root)){
 		if(req.headers.referer && req.headers.referer.includes(shareModule.root)) {
 			const domainIndex = req.headers.referer.indexOf(shareModule.root) + shareModule.root.length;
-			const domainRefer = req.headers.referer.slice(domainIndex, req.headers.referer.indexOf('/', domainIndex));
+			const domainRefer = req.headers.referer.slice(domainIndex).split('/')[0].toLowerCase();
 			if(checkDomain(domainRefer))  return response(res, 301, {'location': shareModule.root + domainRefer + req.url});
-			else return onNotFound(req, res);
+			else return shareModule.onNotFound(req, res);
 		}
-		else	return onNotFound(req, res);
+		else	return shareModule.onNotFound(req, res);
 	}
 	
 	const url = req.url.slice(shareModule.root.length);
@@ -91,10 +79,8 @@ function handleRequest(req, res) {
 	parsed.headers = filterHeaders
 	parsed.method = req.method;
 	if(req.method=='POST') parsed.headers= headers;
-	else if(url.endsWith('.mp3') || url.endsWith('.mp4') || url.endsWith('.m4a'))	 parsed.headers= headers;
 	else if(url.endsWith('/') || url.endsWith('.html') || url.endsWith('.htm') || url.endsWith('.php') || url.endsWith('.css') )  delete parsed.headers['accept-encoding'];
 	else if(url.includes('.php?') || url.includes('.css?') || url.includes('.html?') || url.includes('.htm#') ) delete parsed.headers['accept-encoding'];
-	else if(url.includes('.cloudokyo.cloud')) parsed.headers= headers;
 
 	if(shareModule.ip !== '0.0.0.0'){
 		parsed.localAddress = shareModule.ip;
@@ -123,6 +109,8 @@ function requestRemote(parsed, req, res) {
 		if(isLocalIP(proxyRes.socket.remoteAddress)) return response(res,403);
 		let statusCode = proxyRes.statusCode ? proxyRes.statusCode : 200;
 		const headers = {...proxyRes.headers};
+		delete headers['cookie'];
+		delete headers['set-cookie'];	
 		gotResponse = true;
 
 		if ([301, 302, 307].includes(statusCode) && proxyRes.headers['location']) {
@@ -136,6 +124,11 @@ function requestRemote(parsed, req, res) {
 			else location = location.replace('http://', 'http://' + host + shareModule.root).replace('https://', 'http://' + host + shareModule.root)
 
 			headers['location'] = location;
+			res.writeHead(statusCode, headers);
+			return proxyRes.pipe(res);
+		}
+
+		if(parsed.method != 'GET' ){
 			res.writeHead(statusCode, headers);
 			return proxyRes.pipe(res);
 		}
@@ -182,7 +175,7 @@ function requestRemote(parsed, req, res) {
 		}
 
 		if (resHtml || resJs) {
-			if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.startsWith('/embed/') || parsed.pathname.includes('/live/')))
+			if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.startsWith('/embed/') || parsed.pathname.includes('/live/'))  || parsed.pathname.includes('/video/') )
 				pipend = pipend.pipe(replace('https://www.ganjingworld.', (shareModule.https? 'https://' : 'http://') + host + shareModule.root + "www.ganjingworld."));
 
 			else if(shareModule.https)	pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
@@ -270,4 +263,4 @@ function isLocalIP(address) {
 
 process.on('uncaughtException', gErrorHandler);
 
-module.exports = startShare;
+module.exports = share;
