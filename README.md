@@ -13,7 +13,7 @@ a website module used to share blocked internet, it can be deployed inside pacpr
 
 pacproxy-share适用于安全需求不是很高的人群，用于分享一些大众新闻。pacproxy-share禁用了cookie, 所以只支持网站读取，不支持登录发布信息等，也不搜集或泄露访问者信息。
 
-一些javascript动态生成主页的网站可能无法正常显示，如 twitter, facebook, ganjingworld 等。
+一些javascript动态生成主页的网站可能无法正常显示和访问，如 youtube, twitter, facebook, ganjingworld 等。
 
 # 运行
 
