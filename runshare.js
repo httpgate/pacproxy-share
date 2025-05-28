@@ -5,7 +5,7 @@ const shareModule = require('./share.js');
 const ipv4Regex = /^(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 const options = { 'ip': '0.0.0.0', 'port': 8080 };
 
-if(!process.argv[2]) return startShare();  
+if(!process.argv[2]) return startShare(options);  
 if(process.argv[2]=='-h' || process.argv[2]=='--help') {
     console.log('Usage: pacproxy-share <domain> [<root>] [<port>] [<ip>] [-v] [-http]');
     console.log('  <domain>  : Domain name to use for the share');
