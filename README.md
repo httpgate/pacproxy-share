@@ -52,7 +52,7 @@ Usage: pacproxy-share <domain> [<root>] [<port>] [<ip>] [-v] [-http]
 
 ```
 sudo npm install -g pm2
-sudo pm2 start wssagent -- [DOMAIN]  [ROOT]  [PORT] 
+sudo pm2 start pacproxy-share -- [DOMAIN]  [ROOT]  [PORT] 
 ```
 
 * 具体请参考[用pm2直接运行npm库](https://github.com/httpgate/resouces/tree/main/pm2_Run_Npm_Package.md)
