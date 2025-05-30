@@ -180,7 +180,7 @@ function requestRemote(parsed, req, res) {
 		}
 
 		if (resHtml || resJs) {
-			if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.startsWith('/embed/') || parsed.pathname.includes('/live/'))  || parsed.pathname.includes('/video/') )
+			if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.includes('/embed/') || parsed.pathname.includes('/live/'))  || parsed.pathname.includes('/video/') )
 				pipend = pipend.pipe(replace('https://www.ganjingworld.', (shareModule.https? 'https://' : 'http://') + host + shareModule.root + "www.ganjingworld."));
 			else if(shareModule.https)
 				pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));

@@ -38,8 +38,8 @@ const replace = (searchStr, replaceWith) => {
 			return callback();
 		}
 		
-		while(next = chunk.indexOf(searchBuffer,current)){
-
+		while(true){
+			next = chunk.indexOf(searchBuffer,current);
 			if(next>0 && next + searchBuffer.length > chunk.length){
 				unsureBuffer = chunk.slice(next);
 				ts.push(chunk.slice(current, next));
