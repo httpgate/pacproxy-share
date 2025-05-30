@@ -53,6 +53,8 @@ function shareHandler(req, res) {
 
 	let url = req.url;
 
+	if(url.includes(shareModule.domain + shareModule.root)) url = url.split(shareModule.domain)[1];	
+
 	if(!url.startsWith(shareModule.root)){
 		if(req.headers.referer && req.headers.referer.includes(shareModule.root)) {
 			const domainIndex = req.headers.referer.indexOf(shareModule.root) + shareModule.root.length;
