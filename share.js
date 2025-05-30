@@ -53,7 +53,10 @@ function shareHandler(req, res) {
 
 	let url = req.url;
 
-	if(url.includes(shareModule.domain + shareModule.root)) return response(res, 301, {'location':  url.split(shareModule.domain)[1]});
+	if(url.includes(shareModule.domain + shareModule.root)) {
+		if(req.method=='GET') return response(res, 301, {'location':  url.split(shareModule.domain)[1]});
+		else url = url.split(shareModule.domain)[1];
+	}
 
 	if(!url.startsWith(shareModule.root)){
 		if(req.headers.referer && req.headers.referer.includes(shareModule.root)) {
