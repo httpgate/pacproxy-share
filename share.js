@@ -127,6 +127,7 @@ function requestRemote(parsed, req, res) {
 				if(shareModule.https) location = location.replace('http', 'https');
 				else location = location.replace('https', 'http');
 			}
+			else if(location.startsWith('/'))	location = shareModule.root + rhost + location;
 			else if(shareModule.https)	location = location.replace('https://', 'https://' + host + shareModule.root).replace('http://', 'https://' + host + shareModule.root)
 			else location = location.replace('http://', 'http://' + host + shareModule.root).replace('https://', 'http://' + host + shareModule.root)
 
@@ -141,8 +142,9 @@ function requestRemote(parsed, req, res) {
 		}
 
 		const resHtml = headers['content-type'] && ( headers['content-type'].includes('text/html') ||  headers['content-type'].includes('text/css'));
-		let resJs = rhost.endsWith('ganjingworld.com') && parsed.pathname.endsWith('.js') && parsed.pathname.includes('/pages/_app-');
-		if(!resJs)  resJs = rhost.endsWith('falundafa.org')  && parsed.pathname.includes('functions.js');
+		let resJs = rhost.endsWith('.ganjingworld.com') && parsed.pathname.endsWith('.js') && ( parsed.pathname.includes('/pages/_app-') || parsed.pathname.includes('/_next/static/chunks/main-') );
+		if(!resJs)  resJs = rhost.endsWith('.shenyuncreations.com') && parsed.pathname.endsWith('.js') && ( parsed.pathname.includes('/pages/_app-') || parsed.pathname.includes('/_next/static/chunks/main-') );
+		if(!resJs)  resJs = rhost.endsWith('.falundafa.org')  && parsed.pathname.includes('functions.js');
 
 		if(resJs|| resHtml)	delete headers['content-length'];
 
@@ -182,7 +184,9 @@ function requestRemote(parsed, req, res) {
 		}
 
 		if (resHtml || resJs) {
-			if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.includes('/embed/') || parsed.pathname.includes('/live/'))  || parsed.pathname.includes('/video/') )
+			if( (rhost.endsWith('.ganjingworld.com') || rhost.endsWith('.shenyuncreations.com')) && parsed.pathname.includes('/_next/static/chunks/main-') )
+				pipend = pipend.pipe(replace('"/_next/', '"' + shareModule.root + rhost + '/_next/'))
+			else if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.includes('/embed/') || parsed.pathname.includes('/live/'))  || parsed.pathname.includes('/video/') )
 				pipend = pipend.pipe(replace('https://www.ganjingworld.', (shareModule.https? 'https://' : 'http://') + host + shareModule.root + "www.ganjingworld."));
 			else if(shareModule.https)
 				pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
