@@ -3,7 +3,7 @@
 'use strict'
 const shareModule = require('./share.js');
 const ipv4Regex = /^(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-const options = { 'ip': '0.0.0.0', 'port': 8080 };
+const options = { 'ip': '0.0.0.0', 'port': 8080, 'https': false};
 
 if(!process.argv[2]) return startShare(options);  
 if(process.argv[2]=='-h' || process.argv[2]=='--help') {
@@ -18,6 +18,7 @@ if(process.argv[2]=='-h' || process.argv[2]=='--help') {
 }
 
 options.domain=process.argv[2];
+options.https = true;
 
 if(!process.argv[3]) return startShare(options);
 options.root = process.argv[3];

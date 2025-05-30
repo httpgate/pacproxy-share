@@ -1,5 +1,4 @@
 const Transform = require('stream').Transform;
-
 /**
  *
  * @param {string} searchStr
@@ -31,34 +30,43 @@ const replace = (searchStr, replaceWith) => {
 
         if(unsureBuffer.length){
             chunk = Buffer.concat([unsureBuffer,chunk]);
-            current = unsureBuffer.length;
             unsureBuffer ='';
         }
 
-        next = chunk.indexOf(searchBuffer);
-        while(current < chunk.length){
-            if(next===-1){
-                ts.push(chunk.slice(current,chunk.length));
-                if((chunk.length-current) < searchBuffer.length)    next = current;
-                else next = chunk.length - searchBuffer.length + 1;
+        if(chunk.length < searchBuffer.length){
+            unsureBuffer = chunk;
+            return callback();
+        }
+        
+        while(next = chunk.indexOf(searchBuffer,current)){
+
+            if(next>0 && next + searchBuffer.length > chunk.length){
                 unsureBuffer = chunk.slice(next);
+                ts.push(chunk.slice(current, next));
+                ts.push(replaceBuffer);
                 break;
-            } else {
+            }
+            else if(next===-1){
+                next = Math.max(current, chunk.length - searchBuffer.length + 1);
+                unsureBuffer = chunk.slice(next);
+                ts.push(chunk.slice(current,next));
+                break;
+            }
+            else {
                 ts.push(chunk.slice(current,next));
                 ts.push(replaceBuffer);
                 current = next + searchBuffer.length;
-                next = chunk.indexOf(searchBuffer,current);
-                continue;
             }
         }
-        // This is needed
-        callback()
+        callback();
 	}
 
 	ts._flush = (callback) => {
+        ts.push(unsureBuffer);
         callback()
 	}
 
 	return ts;
 }
+
 module.exports = replace;

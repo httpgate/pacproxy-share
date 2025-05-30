@@ -29,6 +29,8 @@ function share(options){
 	if(!shareModule.root.endsWith('/')) shareModule.root=shareModule.root + '/';	
 
 	if("ip" in options) shareModule.ip=options.ip;
+	if("port" in options) shareModule.port=options.port;
+
 	if("logging" in options) shareModule.logging=options.logging;
 	if("https" in options) shareModule.https=options.https;
 
@@ -49,17 +51,20 @@ function shareHandler(req, res) {
 
 	if(req.headers.host && req.headers.host.split(':')[0].toLowerCase() != shareModule.domain) return shareModule.onNotFound(req, res);
 
-	if(!req.url.startsWith(shareModule.root)){
+	let url = req.url;
+
+	if(!url.startsWith(shareModule.root)){
 		if(req.headers.referer && req.headers.referer.includes(shareModule.root)) {
 			const domainIndex = req.headers.referer.indexOf(shareModule.root) + shareModule.root.length;
 			const domainRefer = req.headers.referer.slice(domainIndex).split('/')[0].toLowerCase();
-			if(checkDomain(domainRefer))  return response(res, 301, {'location': shareModule.root + domainRefer + req.url});
-			else return shareModule.onNotFound(req, res);
+			if(!checkDomain(domainRefer))	return shareModule.onNotFound(req, res);
+			else if(req.method == 'GET')	return response(res, 301, {'location': shareModule.root + domainRefer + req.url});
+			else url = shareModule.root + domainRefer + req.url
 		}
 		else	return shareModule.onNotFound(req, res);
 	}
 	
-	const url = req.url.slice(shareModule.root.length);
+	url = url.slice(shareModule.root.length);
 
 	try{
 		var parsed = new URL('https://' + url);
@@ -70,12 +75,12 @@ function shareHandler(req, res) {
 	if(!checkDomain(parsed.host))	return  response(res, 403);
 
 	const headers = {...req.headers};
-	const filterHeaders = {'User-Agent': headers['user-agent'], 'Accept-Encoding': headers['accept-encoding'], 'Host': parsed.host};
+	const filterHeaders = {'User-Agent': headers['user-agent'], 'Host': parsed.host};
+	if(headers['accept-encoding']) filterHeaders['Accept-Encoding'] = headers['accept-encoding'];
 	if(headers['accept-language']) filterHeaders['Accept-Language'] = headers['accept-language'];
 	if(headers['cache-control']) filterHeaders['Cache-Control'] = headers['cache-control'];
 
 	headers.host = parsed.host;
-
 	parsed.headers = filterHeaders
 	parsed.method = req.method;
 	if(req.method=='POST') parsed.headers= headers;
@@ -177,11 +182,13 @@ function requestRemote(parsed, req, res) {
 		if (resHtml || resJs) {
 			if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.startsWith('/embed/') || parsed.pathname.includes('/live/'))  || parsed.pathname.includes('/video/') )
 				pipend = pipend.pipe(replace('https://www.ganjingworld.', (shareModule.https? 'https://' : 'http://') + host + shareModule.root + "www.ganjingworld."));
+			else if(shareModule.https)
+				pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
+			else
+				pipend = pipend.pipe(replace('http://', 'http://' + host + shareModule.root)).pipe(replace('https://', 'http://' + host + shareModule.root));
 
-			else if(shareModule.https)	pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
-			else	pipend = pipend.pipe(replace('http://', 'http://' + host + shareModule.root)).pipe(replace('https://', 'http://' + host + shareModule.root));
-
-			if(rhost.endsWith('.soundofhope.org') && parsed.pathname.startsWith('/post/'))	pipend = pipend.pipe(replace('//media.soundofhope.org',  '//' + host + shareModule.root + "media.soundofhope.org"));
+			if(rhost.endsWith('.soundofhope.org') && parsed.pathname.startsWith('/post/'))
+				pipend = pipend.pipe(replace('//media.soundofhope.org',  '//' + host + shareModule.root + "media.soundofhope.org"));
 
 			if(encoding.includes('gzip'))	pipend = pipend.pipe(zlib.createGzip());
 			else if(encoding.includes('zstd')) pipend = pipend.pipe(zlib.createZstdCompress())
