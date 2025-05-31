@@ -48,18 +48,19 @@ function share(options){
 function shareHandler(req, res) {
 	const visitorIP = req.socket.remoteAddress;
 	log('%s %s %s ', visitorIP, req.headers.host, req.url);
+	const host = req.headers.host;
 
-	if(req.headers.host && req.headers.host.split(':')[0].toLowerCase() != shareModule.domain) return shareModule.onNotFound(req, res);
+	if(!host || host.split(':')[0].toLowerCase() != shareModule.domain) return shareModule.onNotFound(req, res);
 
 	let url = req.url;
 
-	if(url.includes(shareModule.domain + shareModule.root)) {
-		if(req.method=='GET') return response(res, 301, {'location':  url.split(shareModule.domain)[1]});
-		else url = url.split(shareModule.domain)[1];
+	if(url.includes(host + shareModule.root)) {
+		if(req.method=='GET') return response(res, 301, {'location':  url.split(host)[1]});
+		else url = url.split(host)[1];
 	}
 
 	if(!url.startsWith(shareModule.root)){
-		if(req.headers.referer && req.headers.referer.includes(shareModule.root)) {
+		if(req.headers.referer && req.headers.referer.includes(host + shareModule.root)) {
 			const domainIndex = req.headers.referer.indexOf(shareModule.root) + shareModule.root.length;
 			const domainRefer = req.headers.referer.slice(domainIndex).split('/')[0].toLowerCase();
 			if(!checkDomain(domainRefer))	return shareModule.onNotFound(req, res);
@@ -86,11 +87,9 @@ function shareHandler(req, res) {
 	if(headers['cache-control']) filterHeaders['Cache-Control'] = headers['cache-control'];
 
 	headers.host = parsed.host;
-	parsed.headers = filterHeaders
 	parsed.method = req.method;
+	parsed.headers = filterHeaders
 	if(req.method=='POST') parsed.headers= headers;
-	else if(url.endsWith('/') || url.endsWith('.html') || url.endsWith('.htm') || url.endsWith('.php') || url.endsWith('.css') )  delete parsed.headers['accept-encoding'];
-	else if(url.includes('.php?') || url.includes('.css?') || url.includes('.html?') || url.includes('.htm#') ) delete parsed.headers['accept-encoding'];
 
 	if(shareModule.ip !== '0.0.0.0'){
 		parsed.localAddress = shareModule.ip;
@@ -152,11 +151,7 @@ function requestRemote(parsed, req, res) {
 		if(resJs|| resHtml)	delete headers['content-length'];
 
 		const decoding = (headers['content-encoding'] || '').toLowerCase() ;
-		let encoding = decoding;
-		if(!decoding && resHtml && req.headers['accept-encoding'] && req.headers['accept-encoding'].toLowerCase().includes('gzip')) {
-			encoding = 'gzip';
-			headers['content-encoding'] = 'gzip';
-		}
+		const encoding = (headers['content-encoding'] || req.headers['content-encoding'] || '').toLowerCase() ;
 
 		res.writeHead(statusCode, headers);
 		let pipend = proxyRes;
