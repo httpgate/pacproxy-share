@@ -64,7 +64,7 @@ sudo pm2 start pacproxy-share -- [DOMAIN]  [ROOT]  [PORT]
 
 可利用一些短网址功能指向一些常用网址，并用带背景的图片传播。
 
-建议用CDN加速，如果被屏蔽只需要变更CDN域名即可。 可用CDN的URL Rewrite功能将一些常用网址映射成短网址，方便输入。
+建议用CDN加速，如果被屏蔽只需要变更CDN域名即可。 可用CDN的URL Redirect Rule功能将一些常用网址映射成短网址，方便输入。
 
 如果用CDN加速，运行时domain参数为CDN Domain.
 
