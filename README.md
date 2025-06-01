@@ -66,6 +66,7 @@ sudo pm2 start pacproxy-share -- [DOMAIN]  [ROOT]  [PORT]
 
 建议用CDN加速，如果被屏蔽只需要变更CDN域名即可。 可用CDN的URL Rewrite功能将一些常用网址映射成短网址，方便输入。
 
+如果用CDN加速，运行时domain参数为CDN Domain.
 
 ## 推荐
 
