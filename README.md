@@ -66,7 +66,9 @@ sudo pm2 start pacproxy-share -- [DOMAIN]  [ROOT]  [PORT]
 
 建议用CDN加速，如果被屏蔽只需要变更CDN域名即可。 可用CDN的URL Redirect Rule功能将一些常用网址映射成短网址，方便输入。
 
-如果用CDN加速，运行时domain参数为CDN Domain. Cloudfront CDN默认关闭了POST method, 需要启用。
+如果用CDN加速，运行时domain参数为CDN Domain. 
+
+Cloudfront CDN默认禁止了了POST method, 如果用Cloudfront需要启用。
 
 ## 推荐
 
