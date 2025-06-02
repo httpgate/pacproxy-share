@@ -62,11 +62,11 @@ sudo pm2 start pacproxy-share -- [DOMAIN]  [ROOT]  [PORT]
 
 [pacproxy-server](https://github.com/httpgate/pacproxy-server)集成了pacproxy-share模块，可根据需要选用。
 
-可利用一些短网址功能指向一些常用网址，并用带背景的图片传播。
+可利用一些短网址功能指向一些常用网址，并用带背景的图片传播。尽量避开微信浏览器，微信直接打开链接时是用微信浏览器。
 
 建议用CDN加速，如果被屏蔽只需要变更CDN域名即可。 可用CDN的URL Redirect Rule功能将一些常用网址映射成短网址，方便输入。
 
-如果用CDN加速，运行时domain参数为CDN Domain.
+如果用CDN加速，运行时domain参数为CDN Domain. Cloudfront CDN默认关闭了POST method, 需要启用。
 
 ## 推荐
 
