@@ -11,7 +11,7 @@ a website module used to share blocked internet, it can be deployed inside pacpr
 
 要翻墙访问某个网站，如 m.dongtaiwang.com , 则访问：https://localhost/sharepath/m.dongtaiwang.com
 
-pacproxy-share适用于安全需求不是很高的人群，用于分享一些大众新闻。pacproxy-share一般情况下禁用了cookie, 所以只基本只支持网站读取，不支持登录发布信息等。但干净世界和神韵作品网站可以正常登录观看。
+pacproxy-share适用于安全需求不是很高的人群，用于分享一些大众新闻。pacproxy-share一般情况下禁用了cookie, 所以只基本只支持网站读取，一般不支持登录和发布信息等。
 
 一些javascript动态生成主页的网站可能无法正常显示和访问，如 youtube, twitter, facebook 等。
 
@@ -62,7 +62,7 @@ sudo pm2 start pacproxy-share -- [DOMAIN]  [ROOT]  [PORT]
 
 [pacproxy-server](https://github.com/httpgate/pacproxy-server)集成了pacproxy-share模块，可根据需要选用。但建议与其他用途的pacproxy-server分开部署。
 
-可利用一些短网址功能指向一些常用网址，并用带背景的图片传播。尽量避开微信浏览器，微信直接打开链接时是用微信浏览器。
+可利用一些短网址功能指向一些常用网址，并用带背景的图片传播。尽量避开微信浏览器，微信直接打开链接时是用微信浏览器。可考虑用facetime,teams传播链接。
 
 建议用CDN加速，如果被屏蔽只需要变更CDN域名即可。 可用CDN的URL Redirect Rule功能将一些常用网址映射成短网址，方便输入。
 

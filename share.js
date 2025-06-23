@@ -54,7 +54,7 @@ function shareHandler(req, res) {
 
 	let url = req.url;
 
-	if(url.includes(host + shareModule.root)) {
+	if(url.split('?')[0].includes(host + shareModule.root)) {
 		if(req.method=='GET') return response(res, 301, {'location':  url.split(host)[1]});
 		else url = url.split(host)[1];
 	}
@@ -89,7 +89,9 @@ function shareHandler(req, res) {
 	headers.host = parsed.host;
 	parsed.method = req.method;
 	parsed.headers = filterHeaders
-	if(req.method=='POST') parsed.headers= headers;
+
+	if((req.method=='POST')|| url.endsWith('.mp3') || url.endsWith('.mp4') || url.endsWith('.m4a') ||url.includes('.cloudokyo.'))
+		  parsed.headers= headers;
 
 	if(shareModule.ip !== '0.0.0.0'){
 		parsed.localAddress = shareModule.ip;
@@ -147,11 +149,14 @@ function requestRemote(parsed, req, res) {
 		let resJs = rhost.endsWith('.ganjingworld.com') && parsed.pathname.endsWith('.js') && ( parsed.pathname.includes('/pages/_app-') || parsed.pathname.includes('/_next/static/chunks/main-') );
 		if(!resJs)  resJs = rhost.endsWith('.shenyuncreations.com') && parsed.pathname.endsWith('.js') && ( parsed.pathname.includes('/pages/_app-') || parsed.pathname.includes('/_next/static/chunks/main-') );
 		if(!resJs)  resJs = rhost.endsWith('.falundafa.org')  && parsed.pathname.includes('functions.js');
+		if(!resJs)  resJs = rhost.endsWith('vod.brightchat.com')  && parsed.pathname.includes('/player/');
 
 		if(resJs|| resHtml)	delete headers['content-length'];
 
 		const decoding = (headers['content-encoding'] || '').toLowerCase() ;
 		const encoding = (headers['content-encoding'] || req.headers['content-encoding'] || '').toLowerCase() ;
+
+		if(!headers['content-encoding']) headers['content-encoding'] =  req.headers['content-encoding'];
 
 		res.writeHead(statusCode, headers);
 		let pipend = proxyRes;
@@ -184,8 +189,6 @@ function requestRemote(parsed, req, res) {
 		if (resHtml || resJs) {
 			if( (rhost.endsWith('.ganjingworld.com') || rhost.endsWith('.shenyuncreations.com')) && parsed.pathname.includes('/_next/static/chunks/main-') )
 				pipend = pipend.pipe(replace('"/_next/', '"' + shareModule.root + rhost + '/_next/'))
-			else if(rhost.endsWith('.ganjingworld.com') && (parsed.pathname.includes('/embed/') || parsed.pathname.includes('/live/'))  || parsed.pathname.includes('/video/') )
-				pipend = pipend.pipe(replace('https://www.ganjingworld.', (shareModule.https? 'https://' : 'http://') + host + shareModule.root + "www.ganjingworld."));
 			else if(shareModule.https)
 				pipend = pipend.pipe(replace('https://', 'https://' + host + shareModule.root)).pipe(replace('http://', 'https://' + host + shareModule.root));
 			else
