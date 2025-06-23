@@ -151,12 +151,11 @@ function requestRemote(parsed, req, res) {
 		if(!resJs)  resJs = rhost.endsWith('.falundafa.org')  && parsed.pathname.includes('functions.js');
 		if(!resJs)  resJs = rhost.endsWith('vod.brightchat.com')  && parsed.pathname.includes('/player/');
 
-		if(resJs|| resHtml)	delete headers['content-length'];
+		if(resJs|| resHtml) delete headers['content-length'];
 
 		const decoding = (headers['content-encoding'] || '').toLowerCase() ;
 		const encoding = (headers['content-encoding'] || req.headers['content-encoding'] || '').toLowerCase() ;
-
-		if(!headers['content-encoding']) headers['content-encoding'] =  req.headers['content-encoding'];
+		if(encoding && !headers['content-encoding']) headers['content-encoding'] =  req.headers['content-encoding'];
 
 		res.writeHead(statusCode, headers);
 		let pipend = proxyRes;

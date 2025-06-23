@@ -1,6 +1,6 @@
 {
   "name": "pacproxy-share",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "a website module used to share blocked internet, it can be deployed inside pacproxy-server, Nginx, LiteSpeed, CDN.",
   "main": "share.js",
   "bin": "runshare.js",
